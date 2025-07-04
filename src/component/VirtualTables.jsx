@@ -8,33 +8,31 @@ import {
   flexRender,
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { useSelector, useDispatch } from "react-redux";
 
 import { FaFilter } from "react-icons/fa";
+import {
+  setColumnFilters,
+  setGlobalFilter,
+  setSorting,
+} from "../store/filterSlice.js";
 
 const VirtualTable = () => {
   const rawData = useMemo(() => MOCK_DATA, []);
-  // const [columnFilters, setColumnFilters] = useState({});
-  const [columnFilters, setColumnFilters] = useState(() => {
-    const savedFilters = JSON.parse(localStorage.getItem("columnFilters"));
-    return savedFilters || {};
-  });
-
-
-  const [globalFilter, setGlobalFilter] = useState("");
-  const [sorting, setSorting] = useState([]);
+  const dispatch = useDispatch();
+  const columnFilters = useSelector((state) => state.filters.columnFilters);
+  const globalFilter = useSelector((state) => state.filters.globalFilter);
+  const sorting = useSelector((state) => state.filters.sorting);
   const [selectedRowIds, setSelectedRowIds] = useState([]);
-  
 
   const applyFilter = (columnId, selectedOptions) => {
-    setColumnFilters((prev) => ({
-      ...prev,
-      [columnId]: selectedOptions.length ? selectedOptions : undefined,
-    }));
+    dispatch(
+      setColumnFilters({
+        ...columnFilters,
+        [columnId]: selectedOptions.length ? selectedOptions : undefined,
+      })
+    );
   };
-
-  useEffect(() => {
-    localStorage.setItem("columnFilters", JSON.stringify(columnFilters));
-  }, [columnFilters]);
 
   const columns = useMemo(() => {
     const fields = [
@@ -92,13 +90,14 @@ const VirtualTable = () => {
           applyFilter={applyFilter}
           table={headerContext.table}
           columnFilters={columnFilters}
+          sorting={sorting}
         />
       ),
       cell: (info) => info.getValue(),
     }));
 
     return [selectionColumn, ...dataColumns];
-  }, [rawData, selectedRowIds,columnFilters]);
+  }, [rawData, selectedRowIds, columnFilters]);
 
   const filteredData = useMemo(() => {
     let data = rawData;
@@ -130,9 +129,13 @@ const VirtualTable = () => {
       globalFilter,
       sorting,
     },
-    onSortingChange: setSorting,
+    onSortingChange: (updater) => {
+      const newSorting =
+        typeof updater === "function" ? updater(sorting) : updater;
+      dispatch(setSorting(Array.isArray(newSorting) ? newSorting : []));
+    },
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(), 
+    getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     globalFilterFn: (row, columnId, filterValue) => {
       return Object.values(row.original).some((value) =>
@@ -157,7 +160,7 @@ const VirtualTable = () => {
           type="text"
           placeholder="Search across all fields..."
           value={globalFilter}
-          onChange={(e) => setGlobalFilter(e.target.value)}
+          onChange={(e) => dispatch(setGlobalFilter(e.target.value))}
           style={{
             width: "100%",
             padding: "8px",
@@ -219,11 +222,23 @@ const VirtualTable = () => {
   );
 };
 
-const FilterHeader = ({ label, columnId, data, table, applyFilter,columnFilters }) => {
+const FilterHeader = ({
+  label,
+  columnId,
+  data,
+  table,
+  applyFilter,
+  columnFilters,
+  sorting,
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [selectedValues, setSelectedValues] = useState([]);
   const column = table.getColumn(columnId);
+  const currentSort = Array.isArray(sorting ?? [])
+    ? (sorting ?? []).find((s) => s.id === columnId)
+    : null;
+
   const isSorted = column.getIsSorted();
   const dropdownRef = useRef();
 
@@ -244,7 +259,7 @@ const FilterHeader = ({ label, columnId, data, table, applyFilter,columnFilters 
       newSelected.push(value);
     }
     setSelectedValues(newSelected);
-    applyFilter(columnId, newSelected); 
+    applyFilter(columnId, newSelected);
   };
 
   // Close on outside click
@@ -258,10 +273,9 @@ const FilterHeader = ({ label, columnId, data, table, applyFilter,columnFilters 
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
- useEffect(() => {
-  setSelectedValues(columnFilters[columnId] || []);
-}, [columnFilters, columnId, isOpen]);
-
+  useEffect(() => {
+    setSelectedValues(columnFilters[columnId] || []);
+  }, [columnFilters, columnId, isOpen]);
 
   return (
     <div style={{ position: "relative", fontWeight: "bold" }} ref={dropdownRef}>
@@ -272,27 +286,31 @@ const FilterHeader = ({ label, columnId, data, table, applyFilter,columnFilters 
           gap: "6px",
           cursor: "pointer",
         }}
-        onClick={() => column.toggleSorting()}
+      onClick={column.getToggleSortingHandler()}
+
       >
         <span>
           {label}
+
           {isSorted === "asc" ? " 🔼" : isSorted === "desc" ? " 🔽" : ""}
         </span>
+       
+
         <FaFilter
           onClick={(e) => {
-            e.stopPropagation(); 
+            e.stopPropagation();
             setIsOpen((prev) => !prev);
           }}
           style={{
             cursor: "pointer",
             color:
-              (columnFilters && columnFilters[columnId]?.length)
+              columnFilters && columnFilters[columnId]?.length
                 ? "#007bff"
                 : isOpen
                 ? "#007bff"
                 : "#666",
             fontWeight:
-              (columnFilters && columnFilters[columnId]?.length)
+              columnFilters && columnFilters[columnId]?.length
                 ? "bold"
                 : "normal",
           }}
