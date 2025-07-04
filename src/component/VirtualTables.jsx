@@ -132,7 +132,7 @@ const VirtualTable = () => {
     },
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(), // ADD THIS
+    getSortedRowModel: getSortedRowModel(), 
     getFilteredRowModel: getFilteredRowModel(),
     globalFilterFn: (row, columnId, filterValue) => {
       return Object.values(row.original).some((value) =>
@@ -244,7 +244,7 @@ const FilterHeader = ({ label, columnId, data, table, applyFilter,columnFilters 
       newSelected.push(value);
     }
     setSelectedValues(newSelected);
-    applyFilter(columnId, newSelected); // important
+    applyFilter(columnId, newSelected); 
   };
 
   // Close on outside click
@@ -280,7 +280,7 @@ const FilterHeader = ({ label, columnId, data, table, applyFilter,columnFilters 
         </span>
         <FaFilter
           onClick={(e) => {
-            e.stopPropagation(); // prevent sorting on filter icon click
+            e.stopPropagation(); 
             setIsOpen((prev) => !prev);
           }}
           style={{
