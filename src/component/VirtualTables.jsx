@@ -250,7 +250,6 @@ const FilterHeader = ({
     );
   }, [data, columnId, searchText]);
 
-  // Handle checkbox change
   const handleCheckboxChange = (value) => {
     let newSelected = [...selectedValues];
     if (newSelected.includes(value)) {
@@ -258,8 +257,7 @@ const FilterHeader = ({
     } else {
       newSelected.push(value);
     }
-    setSelectedValues(newSelected);
-    applyFilter(columnId, newSelected);
+    setSelectedValues(newSelected); // Update only local state
   };
 
   // Close on outside click
@@ -286,15 +284,13 @@ const FilterHeader = ({
           gap: "6px",
           cursor: "pointer",
         }}
-      onClick={column.getToggleSortingHandler()}
-
+        onClick={column.getToggleSortingHandler()}
       >
         <span>
           {label}
 
           {isSorted === "asc" ? " 🔼" : isSorted === "desc" ? " 🔽" : ""}
         </span>
-       
 
         <FaFilter
           onClick={(e) => {
@@ -368,24 +364,45 @@ const FilterHeader = ({
               <div style={{ fontStyle: "italic", color: "#888" }}>No match</div>
             )}
           </div>
-          <button
-            onClick={() => {
-              setSelectedValues([]);
-              applyFilter(columnId, []);
-            }}
-            style={{
-              width: "100%",
-              padding: "6px",
-              fontSize: "14px",
-              background: "#f44336",
-              color: "#fff",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-            }}
-          >
-            Clear Filter
-          </button>
+          <div style={{ display: "flex", gap: "8px" }}>
+            <button
+              onClick={() => {
+                applyFilter(columnId, selectedValues);
+                setIsOpen(false);
+              }}
+              style={{
+                flex: 1,
+                padding: "6px",
+                fontSize: "14px",
+                background: "#4caf50",
+                color: "#fff",
+                border: "none",
+                borderRadius: "4px",
+                cursor: "pointer",
+              }}
+            >
+              Apply
+            </button>
+            <button
+              onClick={() => {
+                setSelectedValues([]);
+                applyFilter(columnId, []);
+                setIsOpen(false);
+              }}
+              style={{
+                flex: 1,
+                padding: "6px",
+                fontSize: "14px",
+                background: "#f44336",
+                color: "#fff",
+                border: "none",
+                borderRadius: "4px",
+                cursor: "pointer",
+              }}
+            >
+              Clear
+            </button>
+          </div>
         </div>
       )}
     </div>
